@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: local-drive-app
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist database
+      - ./db.sqlite3:/app/db.sqlite3
+      # Persist OAuth secrets
+      - ./secrets.json:/app/.secrets.json
+      # Persist backup data
+      - ./backup_data:/app/backup_data
+      # Mount source code for development (optional - comment out for production)
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    stdin_open: true
+    tty: true
+
+  redis:
+    image: redis:7-alpine
+    container_name: local-drive-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  celery-worker:
+    build: .
+    container_name: local-drive-celery-worker
+    command: celery -A config worker -l INFO
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+      - ./secrets.json:/app/.secrets.json
+      - ./backup_data:/app/backup_data
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web
+
+  celery-beat:
+    build: .
+    container_name: local-drive-celery-beat
+    command: celery -A config beat -l INFO
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+      - ./secrets.json:/app/.secrets.json
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
+
+# Optional: Add this if you want to use PostgreSQL instead of SQLite
+#  db:
+#    image: postgres:16-alpine
+#    container_name: local-drive-db
+#    environment:
+#      - POSTGRES_DB=localdrive
+#      - POSTGRES_USER=localdrive
+#      - POSTGRES_PASSWORD=localdrive
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    ports:
+#      - "5432:5432"
+#
+#volumes:
+#  postgres_data:

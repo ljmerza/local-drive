@@ -1,0 +1,26 @@
+# Secrets and credentials
+.secrets.json
+secrets.json
+.env
+
+# Backup data (user files)
+backup_data/
+
+# Development
+.claude
+.venv/
+db.sqlite3
+agents.md
+claude.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Misc
+*.log
+.DS_Store
+.vscode/
+.idea/

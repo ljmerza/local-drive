@@ -1,0 +1,117 @@
+{% extends "backup/base.html" %}
+
+{% block title %}Dashboard - Local Drive{% endblock %}
+
+{% block content %}
+<div class="stats card">
+    <div class="stat">
+        <div class="stat-value">{{ total_accounts }}</div>
+        <div class="stat-label">Total Accounts</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value success">{{ healthy_count }}</div>
+        <div class="stat-label">Healthy</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value warning">{{ expiring_count }}</div>
+        <div class="stat-label">Expiring Soon</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value error">{{ expired_count }}</div>
+        <div class="stat-label">Need Attention</div>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Accounts</h2>
+        <div>
+            {% if test_connections %}
+                <a href="/" class="btn">Hide Connection Test</a>
+            {% else %}
+                <a href="?test=1" class="btn">Test Connections</a>
+            {% endif %}
+            <a href="/oauth/google/" class="btn btn-primary">Add Google Account</a>
+        </div>
+    </div>
+
+    {% if accounts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Provider</th>
+                <th>Token Status</th>
+                {% if test_connections %}<th>Connection</th>{% endif %}
+                <th>Last Sync</th>
+                <th>Items</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for status in accounts %}
+            <tr>
+                <td>
+                    <div>{{ status.account.name }}</div>
+                    <div class="text-muted text-sm">{{ status.account.email }}</div>
+                </td>
+                <td>{{ status.account.get_provider_display }}</td>
+                <td>
+                    {% if status.token_status == "valid" %}
+                        <span class="badge badge-success">Valid</span>
+                        {% if status.token_expires_at %}
+                            <div class="text-muted text-sm mt-2">Expires {{ status.token_expires_at|date:"M d, H:i" }}</div>
+                        {% endif %}
+                    {% elif status.token_status == "expiring" %}
+                        <span class="badge badge-warning">Expiring</span>
+                        {% if status.token_expires_at %}
+                            <div class="text-muted text-sm mt-2">{{ status.token_expires_at|date:"M d, H:i" }}</div>
+                        {% endif %}
+                    {% elif status.token_status == "expired" %}
+                        <span class="badge badge-error">Expired</span>
+                    {% elif status.token_status == "missing" %}
+                        <span class="badge badge-error">Missing</span>
+                    {% else %}
+                        <span class="badge badge-muted">Unknown</span>
+                    {% endif %}
+                </td>
+                {% if test_connections %}
+                <td>
+                    {% if status.connection_status == "connected" %}
+                        <span class="badge badge-success">Connected</span>
+                    {% elif status.connection_status == "error" %}
+                        <span class="badge badge-error">Error</span>
+                        {% if status.connection_error %}
+                            <div class="text-muted text-sm mt-2">{{ status.connection_error|truncatechars:50 }}</div>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge badge-muted">Unchecked</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                <td>
+                    {% if status.last_sync %}
+                        {{ status.last_sync|date:"M d, H:i" }}
+                    {% else %}
+                        <span class="text-muted">Never</span>
+                    {% endif %}
+                </td>
+                <td>{{ status.item_count|default:"0" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No accounts configured yet.</p>
+        <p class="mt-2">
+            <a href="/oauth/google/" class="btn btn-primary">Add Google Account</a>
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card text-sm text-muted">
+    <p>Run <code>python manage.py sync_account &lt;id&gt;</code> to sync an account.</p>
+    <p class="mt-2">Run <code>python manage.py verify_tokens</code> to test all tokens.</p>
+</div>
+{% endblock %}
