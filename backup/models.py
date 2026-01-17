@@ -42,8 +42,22 @@ class Account(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Per-account sync scheduling
+    sync_interval_minutes = models.PositiveIntegerField(
+        default=360,  # 6 hours
+        help_text="Minutes between syncs. 0 = use global schedule only."
+    )
+    next_sync_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Next scheduled sync time."
+    )
+
     class Meta:
         unique_together = [["provider", "email"]]
+        indexes = [
+            models.Index(fields=["is_active", "next_sync_at"]),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.get_provider_display()})"

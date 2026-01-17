@@ -179,13 +179,28 @@ CELERY_TIMEZONE = 'UTC'
 from datetime import timedelta
 from celery.schedules import crontab
 
+# Configurable sync interval (default: 6 hours)
+SYNC_INTERVAL_HOURS = int(os.environ.get('SYNC_INTERVAL_HOURS', 6))
+
 CELERY_BEAT_SCHEDULE = {
     'sync-all-accounts': {
         'task': 'backup.tasks.sync_all_accounts',
-        'schedule': timedelta(hours=6),
+        'schedule': timedelta(hours=SYNC_INTERVAL_HOURS),
     },
     'run-garbage-collection': {
         'task': 'backup.tasks.run_gc_task',
         'schedule': crontab(hour=3, minute=0),  # 3 AM daily
+    },
+    'refresh-expiring-tokens': {
+        'task': 'backup.tasks.refresh_expiring_tokens',
+        'schedule': timedelta(hours=4),
+    },
+    'sync-due-accounts': {
+        'task': 'backup.tasks.sync_due_accounts',
+        'schedule': timedelta(minutes=5),
+    },
+    'check-account-health': {
+        'task': 'backup.tasks.check_account_health',
+        'schedule': crontab(hour='*/6'),  # Every 6 hours
     },
 }

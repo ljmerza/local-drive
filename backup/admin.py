@@ -13,9 +13,19 @@ from .sync.models import SyncEvent, SyncSession
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ["name", "provider", "email", "is_active", "created_at"]
+    list_display = [
+        "name",
+        "provider",
+        "email",
+        "is_active",
+        "sync_interval_minutes",
+        "next_sync_at",
+        "created_at",
+    ]
     list_filter = ["provider", "is_active"]
+    list_editable = ["sync_interval_minutes"]
     search_fields = ["name", "email"]
+    readonly_fields = ["next_sync_at"]
 
 
 @admin.register(SyncRoot)
